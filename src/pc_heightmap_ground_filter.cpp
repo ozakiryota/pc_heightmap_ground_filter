@@ -15,7 +15,8 @@ class PcHeightmapGroundFilter{
 		ros::Publisher pub_ground_;
 		ros::Publisher pub_obstacle_;
         /*buffer*/
-        pcl::PointCloud<pcl::PointXYZI>::Ptr pc {new pcl::PointCloud<pcl::PointXYZI>};
+        pcl::PointCloud<pcl::PointXYZI>::Ptr obstacle_pc_ {new pcl::PointCloud<pcl::PointXYZI>};
+        pcl::PointCloud<pcl::PointXYZI>::Ptr ground_pc_ {new pcl::PointCloud<pcl::PointXYZI>};
 		/*parameter*/
 		double m_per_cell_;
 		int grid_dim_;
@@ -24,15 +25,15 @@ class PcHeightmapGroundFilter{
 	public:
 		PcHeightmapGroundFilter();
 		void callback(const sensor_msgs::PointCloud2ConstPtr& msg);
-		// void pcToRings(const sensor_msgs::PointCloud2& pc_msg);
-		// void ringsToImage(void);
-		// void publication(std_msgs::Header header);
+        void filter(pcl::PointCloud<pcl::PointXYZI>::Ptr pc);
+        void useHeightmap(pcl::PointCloud<pcl::PointXYZI>::Ptr pc, size_t &obstacle_counter, size_t &ground_counter);
+		void publication(std_msgs::Header header);
 };
 
 PcHeightmapGroundFilter::PcHeightmapGroundFilter()
 	: nhPrivate_("~")
 {
-	std::cout << "--- pc_heightmap_ground_filter ---" << std::endl;
+	std::cout << "----- pc_heightmap_ground_filter -----" << std::endl;
 	/*parameter*/
 	nhPrivate_.param("m_per_cell", m_per_cell_, 0.5);
 	std::cout << "m_per_cell_ = " << m_per_cell_ << std::endl;
@@ -49,109 +50,82 @@ PcHeightmapGroundFilter::PcHeightmapGroundFilter()
 
 void PcHeightmapGroundFilter::callback(const sensor_msgs::PointCloud2ConstPtr &msg)
 {
+    pcl::PointCloud<pcl::PointXYZI>::Ptr pc (new pcl::PointCloud<pcl::PointXYZI>);
     pcl::fromROSMsg(*msg, *pc);
-	// for(size_t i=0 ; i<_rings.size() ; ++i){
-	// 	_rings[i]->points.clear();
-	// }
-	// pcToRings(*msg);
-	// ringsToImage();
-	// publication(msg->header);
+    filter(pc);
+	publication(msg->header);
 }
 
-// void PcHeightmapGroundFilter::pcToRings(const sensor_msgs::PointCloud2& pc_msg)
-// {
-// 	sensor_msgs::PointCloud2ConstIterator<uint16_t> iter_ring(pc_msg,"ring");
-// 	sensor_msgs::PointCloud2ConstIterator<float> iter_x(pc_msg,"x");
-// 	sensor_msgs::PointCloud2ConstIterator<float> iter_y(pc_msg,"y");
-// 	sensor_msgs::PointCloud2ConstIterator<float> iter_z(pc_msg,"z");
-// 	sensor_msgs::PointCloud2ConstIterator<float> iter_intensity(pc_msg,"intensity");
+void PcHeightmapGroundFilter::filter(pcl::PointCloud<pcl::PointXYZI>::Ptr pc)
+{
+    obstacle_pc_->points.resize(pc->points.size());
+    ground_pc_->points.resize(pc->points.size());
 
-// 	for( ; iter_ring!=iter_ring.end() ; ++iter_ring, ++iter_x, ++iter_y, ++iter_z, ++iter_intensity){
-// 		pcl::PointXYZI tmp;
-// 		tmp.x = *iter_x;
-// 		tmp.y = *iter_y;
-// 		tmp.z = *iter_z;
-// 		tmp.intensity = *iter_intensity;
-// 		_rings[*iter_ring]->points.push_back(tmp);
-// 	}
-// }
+    size_t obstacle_counter = 0;
+    size_t ground_counter = 0;
+    useHeightmap(pc, obstacle_counter, ground_counter);
 
-// void PcHeightmapGroundFilter::ringsToImage(void)
-// {
-// 	/*reset*/
-// 	// _img_cv_64f = cv::Mat::zeros(_num_ring, _points_per_ring, CV_64FC1);
-// 	_img_cv_64f = cv::Mat(_num_ring, _points_per_ring, CV_64FC1, cv::Scalar(-1));
-// 	/*input*/
-// 	double angle_resolution = 2*M_PI/(double)_points_per_ring;
-// 	for(size_t i=0 ; i<_rings.size() ; ++i){
-// 		int row = _rings.size() - i - 1;
-// 		for(size_t j=0 ; j<_rings[i]->points.size() ; ++j){
-// 			double angle = atan2(_rings[i]->points[j].y, _rings[i]->points[j].x);
-// 			int col = _points_per_ring - (int)((angle + M_PI)/angle_resolution) - 1;
-// 			if(std::isnan(_rings[i]->points[j].x) || std::isnan(_rings[i]->points[j].y))    continue;
-// 			_img_cv_64f.at<double>(row, col) = sqrt(_rings[i]->points[j].x*_rings[i]->points[j].x + _rings[i]->points[j].y*_rings[i]->points[j].y);
-// 		}
-// 	}
-// 	/*convert*/
-// 	_img_cv_64f.convertTo(_img_cv_16u, CV_16UC1, 1/_depth_resolution, 0);
-// 	_img_cv_64f.convertTo(_img_cv_8u, CV_8UC1, 255/_max_range, 0);
-// 	/*save*/
-// 	if(_save_limit > 0 && _save_counter < _save_limit){
-// 		/*CV_64FC1*/
-// 		std::string save_mat64f_path = _save_root_path + "/" + _save_img_name + std::to_string(_save_counter) + "_64f.xml";
-// 		cv::FileStorage fs(save_mat64f_path, cv::FileStorage::WRITE);
-// 		if(!fs.isOpened()){
-// 			std::cout << save_mat64f_path << " cannot be opened" << std::endl;
-// 			exit(1);
-// 		}
-// 		fs << "mat" << _img_cv_64f;
-// 		fs.release();
-// 		/*CV_16UC1*/
-// 		std::string save_img16u_path = _save_root_path + "/"  + _save_img_name + std::to_string(_save_counter) + "_16u.jpg";
-// 		cv::imwrite(save_img16u_path, _img_cv_16u);
-// 		/*CV_8UC1*/
-// 		std::string save_img8u_path = _save_root_path + "/"  + _save_img_name + std::to_string(_save_counter) + "_8u.jpg";
-// 		cv::imwrite(save_img8u_path, _img_cv_8u);
-// 		/*count*/
-// 		++_save_counter;
-// 		/*print*/
-// 		std::cout << "----- " << _save_counter << " -----" << std::endl;
-// 		std::cout << "_img_cv_64f: " << _img_cv_64f.size().height << " x " << _img_cv_64f.size().width << std::endl;
-// 		std::cout << "_img_cv_16u: " << _img_cv_16u.size().height << " x " << _img_cv_16u.size().width << std::endl;
-// 		std::cout << "_img_cv_8u: " << _img_cv_8u.size().height << " x " << _img_cv_8u.size().width << std::endl;
-// 		//for(int row=0 ; row<_img_cv_64f.size().height ; row+=_img_cv_64f.size().height/3){
-// 		//	for(int col=0 ; col<_img_cv_64f.size().width ; col+=_img_cv_64f.size().width/3){
-// 		//		std::cout << "_img_cv_64f.at<double>(" << row << ", " << col << ") = " << _img_cv_64f.at<double>(row, col) << std::endl;
-// 		//		std::cout << "_img_cv_16u.at<unsigned short>(" << row << ", " << col << ") = " << _img_cv_16u.at<unsigned short>(row, col) << std::endl;
-// 		//		std::cout << "_img_cv_16u.at<unsigned long int>(" << row << ", " << col << ") = " << _img_cv_16u.at<unsigned long int>(row, col) << std::endl;
-// 		//		std::cout << "(int)_img_cv_8u.at<unsigned char>(" << row << ", " << col << ") = " << (int)_img_cv_8u.at<unsigned char>(row, col) << std::endl;
-// 		//	}
-// 		//}
-// 	}
-// }
+    obstacle_pc_->points.resize(obstacle_counter);
+    ground_pc_->points.resize(ground_counter);
+}
 
-// void PcHeightmapGroundFilter::publication(std_msgs::Header header)
-// {
-// 	sensor_msgs::ImagePtr img_ros_64f = cv_bridge::CvImage(header, "64FC1", _img_cv_64f).toImageMsg();
-// 	sensor_msgs::ImagePtr img_ros_16u = cv_bridge::CvImage(header, "mono16", _img_cv_16u).toImageMsg();
-// 	sensor_msgs::ImagePtr img_ros_8u = cv_bridge::CvImage(header, "mono8", _img_cv_8u).toImageMsg();
-// 	_pub_img_64f.publish(img_ros_64f);
-// 	_pub_img_16u.publish(img_ros_16u);
-// 	_pub_img_8u.publish(img_ros_8u);
+void PcHeightmapGroundFilter::useHeightmap(pcl::PointCloud<pcl::PointXYZI>::Ptr pc, size_t &obstacle_counter, size_t &ground_counter)
+{
+    float min[grid_dim_][grid_dim_];
+    float max[grid_dim_][grid_dim_];
+    bool init[grid_dim_][grid_dim_];
+    memset(&init, 0, grid_dim_*grid_dim_);
 
-// 	/*check*/
-// 	//cv_bridge::CvImagePtr cv_ptr_64f = cv_bridge::toCvCopy(img_ros_64f, img_ros_64f->encoding);
-// 	//cv_bridge::CvImagePtr cv_ptr_16u = cv_bridge::toCvCopy(img_ros_16u, img_ros_16u->encoding);
-// 	//cv_bridge::CvImagePtr cv_ptr_8u = cv_bridge::toCvCopy(img_ros_8u, img_ros_8u->encoding);
-// 	//for(int row=0 ; row<cv_ptr_64f->image.size().height ; row+=cv_ptr_64f->image.size().height/3){
-// 	//	for(int col=0 ; col<cv_ptr_64f->image.size().width ; col+=cv_ptr_64f->image.size().width/3){
-// 	//		std::cout << "_img_cv_64f.at<double>(" << row << ", " << col << ") = " << _img_cv_64f.at<double>(row, col) << std::endl;
-// 	//		std::cout << "cv_ptr_64f->image.at<double>(" << row << ", " << col << ") = " << cv_ptr_64f->image.at<double>(row, col) << std::endl;
-// 	//		std::cout << "cv_ptr_16u->image.at<unsigned short>(" << row << ", " << col << ") = " << cv_ptr_16u->image.at<unsigned short>(row, col) << std::endl;
-// 	//		std::cout << "(int)cv_ptr_8u->image.at<unsigned char>(" << row << ", " << col << ") = " << (int)cv_ptr_8u->image.at<unsigned char>(row, col) << std::endl;
-// 	//	}
-// 	//}
-// }
+    /*build height map*/
+    for(size_t i = 0; i < pc->points.size(); ++i){
+        int x = ((grid_dim_ / 2) + pc->points[i].x / m_per_cell_);
+        int y = ((grid_dim_ / 2) + pc->points[i].y / m_per_cell_);
+        if(x >= 0 && x < grid_dim_ && y >= 0 && y < grid_dim_){
+            if(!init[x][y]){
+                min[x][y] = pc->points[i].z;
+                max[x][y] = pc->points[i].z;
+                init[x][y] = true;
+            }
+            else{
+                min[x][y] = (min[x][y] < pc->points[i].z ? min[x][y] : pc->points[i].z);
+                max[x][y] = (max[x][y] > pc->points[i].z ? max[x][y] : pc->points[i].z);
+            }
+        }
+    }
+
+    /*display points where map has height-difference > threshold*/
+    for(size_t i = 0; i < pc->points.size(); ++i){
+        int x = (grid_dim_ / 2) + pc->points[i].x / m_per_cell_;
+        int y = (grid_dim_ / 2) + pc->points[i].y / m_per_cell_;
+        if(x >= 0 && x < grid_dim_ && y >= 0 && y < grid_dim_ && init[x][y]){
+            if(max[x][y] - min[x][y] > height_diff_threshold_){
+                obstacle_pc_->points[obstacle_counter] = pc->points[i];
+                obstacle_counter++;
+            }
+            else{
+                ground_pc_->points[ground_counter] = pc->points[i];
+                ground_counter++;
+            }
+        }
+    }
+}
+
+void PcHeightmapGroundFilter::publication(std_msgs::Header header)
+{
+    if(!obstacle_pc_->points.empty()){
+        sensor_msgs::PointCloud2 obstacle_ros_pc;
+        pcl::toROSMsg(*obstacle_pc_, obstacle_ros_pc);
+        obstacle_ros_pc.header = header;
+        pub_obstacle_.publish(obstacle_ros_pc);
+    }
+
+    if(!ground_pc_->points.empty()){
+        sensor_msgs::PointCloud2 ground_ros_pc;
+        pcl::toROSMsg(*ground_pc_, ground_ros_pc);
+        ground_ros_pc.header = header;
+        pub_ground_.publish(ground_ros_pc);
+    }
+}
 
 int main(int argc, char** argv)
 {
