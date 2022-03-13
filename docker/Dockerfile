@@ -31,7 +31,11 @@ RUN apt-get update && \
     apt-get install -y \
 		libpcl-dev \
 		ros-noetic-pcl-conversions \
-		ros-noetic-rviz
+		ros-noetic-rviz && \
+	cd ~/catkin_ws/src && \
+	git clone https://github.com/ozakiryota/pc_heightmap_ground_filter.git && \
+	cd ~/catkin_ws/ && \
+	/bin/bash -c "source /opt/ros/noetic/setup.bash; catkin_make"
 ########## Velodyne driver ##########
 RUN apt-get update && \
 	apt-get install -y \
