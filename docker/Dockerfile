@@ -26,7 +26,7 @@ RUN echo 'function cmk(){ \n\
 		cd $cpath \n\
 		OLDPWD=$lastpwd \n\
         }' >> ~/.bashrc
-########## Main ##########
+########## pc_heightmap_ground_filter ##########
 RUN apt-get update && \
     apt-get install -y \
 		libpcl-dev \
