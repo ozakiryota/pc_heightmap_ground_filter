@@ -23,6 +23,13 @@ cd pc_heightmap_ground_filter/docker
 ./build.sh
 ```
 
+## Parameters
+* m_per_cell
+* grid_dim
+* height_diff_threshold
+
+![pc_heightmap_ground_filter](https://user-images.githubusercontent.com/37431972/159501006-4042a5c4-f9ed-419a-8348-179cd0846469.png)
+
 ## Usage
 1. Edit the launch file
 1. Run
