@@ -3,8 +3,8 @@
 ## Demo
 ![demo](https://user-images.githubusercontent.com/37431972/158047203-0c343126-d70b-4611-a68d-e1d4658c838d.png)
 
-## Build 
-### Locally
+## Installation 
+### Build locally
 Requirements:
 * ROS
 * PCL
@@ -16,7 +16,7 @@ cd ..
 catkin_make
 ```
 
-### With Docker
+### Build With Docker
 ```bash
 git clone https://github.com/ozakiryota/pc_heightmap_ground_filter.git
 cd pc_heightmap_ground_filter/docker
