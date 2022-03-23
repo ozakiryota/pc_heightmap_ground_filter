@@ -16,7 +16,7 @@ cd ..
 catkin_make
 ```
 
-### Build With Docker
+### Build with Docker
 ```bash
 git clone https://github.com/ozakiryota/pc_heightmap_ground_filter.git
 cd pc_heightmap_ground_filter/docker
@@ -28,7 +28,7 @@ cd pc_heightmap_ground_filter/docker
 * grid_dim
 * height_diff_threshold
 
-![pc_heightmap_ground_filter](https://user-images.githubusercontent.com/37431972/159501006-4042a5c4-f9ed-419a-8348-179cd0846469.png)
+![pc_heightmap_ground_filter](https://user-images.githubusercontent.com/37431972/159700061-9f1c7368-821c-42a8-aac9-3dc36f23eb29.png)
 
 ## Usage
 1. Edit the launch file
