@@ -8,7 +8,7 @@ class PcHeightmapGroundFilter{
 	private:
 		/*node handle*/
 		ros::NodeHandle nh_;
-		ros::NodeHandle nhPrivate_;
+		ros::NodeHandle nh_private_;
 		/*subscriber*/
 		ros::Subscriber sub_;
 		/*publisher*/
@@ -31,15 +31,15 @@ class PcHeightmapGroundFilter{
 };
 
 PcHeightmapGroundFilter::PcHeightmapGroundFilter()
-	: nhPrivate_("~")
+	: nh_private_("~")
 {
 	std::cout << "----- pc_heightmap_ground_filter -----" << std::endl;
 	/*parameter*/
-	nhPrivate_.param("m_per_cell", m_per_cell_, 0.5);
+	nh_private_.param("m_per_cell", m_per_cell_, 0.5);
 	std::cout << "m_per_cell_ = " << m_per_cell_ << std::endl;
-	nhPrivate_.param("grid_dim", grid_dim_, 320);
+	nh_private_.param("grid_dim", grid_dim_, 320);
 	std::cout << "grid_dim_ = " << grid_dim_ << std::endl;
-	nhPrivate_.param("height_diff_threshold", height_diff_threshold_, 0.01);
+	nh_private_.param("height_diff_threshold", height_diff_threshold_, 0.01);
 	std::cout << "height_diff_threshold_ = " << height_diff_threshold_ << std::endl;
 	/*subscriber*/
 	sub_ = nh_.subscribe("/point_cloud", 1, &PcHeightmapGroundFilter::callback, this);
