@@ -14,8 +14,8 @@
 	<!-- main -->
 	<node pkg="pc_heightmap_ground_filter" type="pc_heightmap_ground_filter" name="pc_heightmap_ground_filter" output="screen">
         <remap from="/point_cloud" to="/velodyne_points"/>
-		<param name="m_per_cell" type="double" value="0.5"/>
-		<param name="grid_dim" type="int" value="100"/>
-		<param name="height_diff_threshold" type="double" value="0.5"/>
+		<param name="meter_per_cell" type="double" value="0.5"/>
+		<param name="cell_per_axis" type="int" value="100"/>
+		<param name="min_obstacle_height" type="double" value="0.5"/>
 	</node>
 </launch>

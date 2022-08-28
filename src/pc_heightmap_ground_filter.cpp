@@ -18,9 +18,9 @@ class PcHeightmapGroundFilter{
         pcl::PointCloud<pcl::PointXYZI>::Ptr obstacle_pc_ {new pcl::PointCloud<pcl::PointXYZI>};
         pcl::PointCloud<pcl::PointXYZI>::Ptr ground_pc_ {new pcl::PointCloud<pcl::PointXYZI>};
 		/*parameter*/
-		double m_per_cell_;
-		int grid_dim_;
-		double height_diff_threshold_;
+		double meter_per_cell_;
+		int cell_per_axis_;
+		double min_obstacle_height_;
 
 	public:
 		PcHeightmapGroundFilter();
@@ -35,12 +35,12 @@ PcHeightmapGroundFilter::PcHeightmapGroundFilter()
 {
 	std::cout << "----- pc_heightmap_ground_filter -----" << std::endl;
 	/*parameter*/
-	nh_private_.param("m_per_cell", m_per_cell_, 0.5);
-	std::cout << "m_per_cell_ = " << m_per_cell_ << std::endl;
-	nh_private_.param("grid_dim", grid_dim_, 320);
-	std::cout << "grid_dim_ = " << grid_dim_ << std::endl;
-	nh_private_.param("height_diff_threshold", height_diff_threshold_, 0.01);
-	std::cout << "height_diff_threshold_ = " << height_diff_threshold_ << std::endl;
+	nh_private_.param("meter_per_cell", meter_per_cell_, 0.5);
+	std::cout << "meter_per_cell_ = " << meter_per_cell_ << std::endl;
+	nh_private_.param("cell_per_axis", cell_per_axis_, 320);
+	std::cout << "cell_per_axis_ = " << cell_per_axis_ << std::endl;
+	nh_private_.param("min_obstacle_height", min_obstacle_height_, 0.01);
+	std::cout << "min_obstacle_height_ = " << min_obstacle_height_ << std::endl;
 	/*subscriber*/
 	sub_ = nh_.subscribe("/point_cloud", 1, &PcHeightmapGroundFilter::callback, this);
 	/*publisher*/
@@ -71,16 +71,16 @@ void PcHeightmapGroundFilter::filter(pcl::PointCloud<pcl::PointXYZI>::Ptr pc)
 
 void PcHeightmapGroundFilter::useHeightmap(pcl::PointCloud<pcl::PointXYZI>::Ptr pc, size_t &obstacle_counter, size_t &ground_counter)
 {
-    float min[grid_dim_][grid_dim_];
-    float max[grid_dim_][grid_dim_];
-    bool init[grid_dim_][grid_dim_];
-    memset(&init, 0, grid_dim_*grid_dim_);
+    float min[cell_per_axis_][cell_per_axis_];
+    float max[cell_per_axis_][cell_per_axis_];
+    bool init[cell_per_axis_][cell_per_axis_];
+    memset(&init, 0, cell_per_axis_*cell_per_axis_);
 
     /*build height map*/
     for(size_t i = 0; i < pc->points.size(); ++i){
-        int x = ((grid_dim_ / 2) + pc->points[i].x / m_per_cell_);
-        int y = ((grid_dim_ / 2) + pc->points[i].y / m_per_cell_);
-        if(x >= 0 && x < grid_dim_ && y >= 0 && y < grid_dim_){
+        int x = ((cell_per_axis_ / 2) + pc->points[i].x / meter_per_cell_);
+        int y = ((cell_per_axis_ / 2) + pc->points[i].y / meter_per_cell_);
+        if(x >= 0 && x < cell_per_axis_ && y >= 0 && y < cell_per_axis_){
             if(!init[x][y]){
                 min[x][y] = pc->points[i].z;
                 max[x][y] = pc->points[i].z;
@@ -95,10 +95,10 @@ void PcHeightmapGroundFilter::useHeightmap(pcl::PointCloud<pcl::PointXYZI>::Ptr 
 
     /*display points where map has height-difference > threshold*/
     for(size_t i = 0; i < pc->points.size(); ++i){
-        int x = (grid_dim_ / 2) + pc->points[i].x / m_per_cell_;
-        int y = (grid_dim_ / 2) + pc->points[i].y / m_per_cell_;
-        if(x >= 0 && x < grid_dim_ && y >= 0 && y < grid_dim_ && init[x][y]){
-            if(max[x][y] - min[x][y] > height_diff_threshold_){
+        int x = (cell_per_axis_ / 2) + pc->points[i].x / meter_per_cell_;
+        int y = (cell_per_axis_ / 2) + pc->points[i].y / meter_per_cell_;
+        if(x >= 0 && x < cell_per_axis_ && y >= 0 && y < cell_per_axis_ && init[x][y]){
+            if(max[x][y] - min[x][y] > min_obstacle_height_){
                 obstacle_pc_->points[obstacle_counter] = pc->points[i];
                 obstacle_counter++;
             }
