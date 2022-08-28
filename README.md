@@ -28,7 +28,7 @@ cd pc_heightmap_ground_filter/docker
 * cell_per_axis
 * min_obstacle_height
 
-![pc_heightmap_ground_filter](https://user-images.githubusercontent.com/37431972/159700061-9f1c7368-821c-42a8-aac9-3dc36f23eb29.png)
+![pc_heightmap_ground_filter](https://user-images.githubusercontent.com/37431972/187061247-f0dc1d09-1362-427c-b3b8-1156dc0bb65a.png)
 
 ## Usage
 1. Edit the launch file
